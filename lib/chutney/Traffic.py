@@ -132,7 +132,6 @@ class Listener(Peer):
         newsock, endpoint = self.s.accept()
         debug("new client from %s:%s (fd=%d)" %
               (endpoint[0], endpoint[1], newsock.fileno()))
-        print("sink-sock %d %d" % (newsock.fileno(), endpoint[1]))
         self.tt.add(Sink(self.tt, newsock))
 
 
@@ -211,7 +210,6 @@ class Source(Peer):
         if self.repetitions == 0:
             self.data = {}
         self.connect(server)
-        print("source-sock %d %d" % (self.fd(), self.s.getsockname()[1]))
 
     def connect(self, endpoint):
         self.dest = endpoint
