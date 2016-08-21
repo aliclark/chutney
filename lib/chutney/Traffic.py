@@ -342,7 +342,7 @@ class TrafficTester():
             self.repetitions = 0
         if self.repetitions == 0:
             self.data = {}
-        self.dot_repetitions = dot_repetitions
+        self.dot_repetitions = 0
         debug("listener fd=%d" % self.listener.fd())
         self.peers = {}  # fd:Peer
 
