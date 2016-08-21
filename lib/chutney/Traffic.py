@@ -241,9 +241,9 @@ class Source(Peer):
                     self.inbuf = ''
                     debug("successfully connected (fd=%d)" % self.fd())
                     print('source %d %d %f' % (self.fd(), self.repetitions, time.time()))
+                    self.outbuf += chr(self.fd())
                     # if we have no reps or no data, skip sending actual data
                     if self.want_to_write():
-                        self.outbuf += chr(self.fd())
                         return 1    # Keep us around for writing.
                     else:
                         # shortcut write when we don't ever expect any data
@@ -273,10 +273,10 @@ class Source(Peer):
                 self.state = self.CONNECTED
                 debug("successfully connected (fd=%d)" % self.fd())
                 print('source %d %d %f' % (self.fd(), self.repetitions, time.time()))
+                self.outbuf += chr(self.fd())
             else:
                 self.state = self.CONNECTING_THROUGH_PROXY
                 self.outbuf = socks_cmd(self.dest)
-                self.outbuf += chr(self.fd())
                 # we write socks_cmd() to the proxy, then read the response
                 # if we get the correct response, we're CONNECTED
         if self.state == self.CONNECTED:
