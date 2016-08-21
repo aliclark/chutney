@@ -143,6 +143,7 @@ class Sink(Peer):
         super(Sink, self).__init__(Peer.SINK, tt, s)
         self.inbuf = ''
         self.repetitions = self.tt.repetitions
+        print('sink %d %d %f' % (self.fd(), self.repetitions, time.time()))
 
     def on_readable(self):
         """Invoked when the socket becomes readable.
@@ -160,6 +161,8 @@ class Sink(Peer):
         self.inbuf += self.s.recv(len(data) - len(self.inbuf))
         debug("successfully received (bytes=%d)" % len(self.inbuf))
         while len(self.inbuf) >= len(data):
+            if (len(data) * self.repetitions) % (1024 * 1024) == 0:
+                print('sink %d %d %f' % (self.fd(), self.repetitions, time.time()))
             assert(len(self.inbuf) <= len(data) or self.repetitions > 1)
             if self.inbuf[:len(data)] != data:
                 debug("receive comparison failed (bytes=%d)" % len(data))
@@ -167,8 +170,8 @@ class Sink(Peer):
             # if we're not debugging, print a dot every dot_repetitions reps
             elif (not debug_flag and self.tt.dot_repetitions > 0 and
                   self.repetitions % self.tt.dot_repetitions == 0):
-                sys.stdout.write('.')
-                sys.stdout.flush()
+                sys.stderr.write('.')
+                sys.stderr.flush()
             # repeatedly check data against self.inbuf if required
             debug("receive comparison success (bytes=%d)" % len(data))
             self.inbuf = self.inbuf[len(data):]
@@ -231,6 +234,7 @@ class Source(Peer):
                     self.state = self.CONNECTED
                     self.inbuf = ''
                     debug("successfully connected (fd=%d)" % self.fd())
+                    print('source %d %d %f' % (self.fd(), self.repetitions, time.time()))
                     # if we have no reps or no data, skip sending actual data
                     if self.want_to_write():
                         return 1    # Keep us around for writing.
@@ -261,6 +265,7 @@ class Source(Peer):
             if self.proxy is None:
                 self.state = self.CONNECTED
                 debug("successfully connected (fd=%d)" % self.fd())
+                print('source %d %d %f' % (self.fd(), self.repetitions, time.time()))
             else:
                 self.state = self.CONNECTING_THROUGH_PROXY
                 self.outbuf = socks_cmd(self.dest)
@@ -269,6 +274,8 @@ class Source(Peer):
         if self.state == self.CONNECTED:
             # repeat self.data into self.outbuf if required
             if (len(self.outbuf) < len(self.data) and self.repetitions > 0):
+                if (len(self.data) * self.repetitions) % (1024 * 1024) == 0:
+                    print('source %d %d %f' % (self.fd(), self.repetitions, time.time()))
                 self.outbuf += self.data
                 self.repetitions -= 1
                 debug("adding more data to send (bytes=%d)" % len(self.data))
@@ -378,6 +385,7 @@ class TrafficTester():
                     # debug("need %d more octets from fd %d" % (n, fd))
                     pass
                 elif n == 0:  # Success.
+                    print('sink %d %d %f' % (fd, p.repetitions, time.time()))
                     self.tests.success()
                     self.remove(p)
                 else:       # Failure.
@@ -391,6 +399,7 @@ class TrafficTester():
                 if p is not None:  # Might have been removed above.
                     n = p.on_writable()
                     if n == 0:
+                        print('source %d %d %f' % (fd, p.repetitions, time.time()))
                         self.remove(p)
                     elif n < 0:
                         self.tests.failure()
@@ -404,8 +413,8 @@ class TrafficTester():
         for s in self.pending_close:
             s.close()
         if not debug_flag:
-            sys.stdout.write('\n')
-            sys.stdout.flush()
+            sys.stderr.write('\n')
+            sys.stderr.flush()
         return self.tests.all_done() and self.tests.failure_count() == 0
 
 
