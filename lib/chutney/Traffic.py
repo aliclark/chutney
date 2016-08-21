@@ -143,6 +143,7 @@ class Sink(Peer):
         super(Sink, self).__init__(Peer.SINK, tt, s)
         self.inbuf = ''
         self.repetitions = self.tt.repetitions
+        self.need_their_fd = True
         print('sink %d %d %f' % (self.fd(), self.repetitions, time.time()))
 
     def on_readable(self):
@@ -154,6 +155,11 @@ class Sink(Peer):
         return self.verify(self.tt.data)
 
     def verify(self, data):
+        if self.need_their_fd:
+            their_fd_bin = self.s.recv(1)
+            if len(their_fd_bin) == 1:
+                print('sink-sock %d %d' % (self.fd(), ord(their_fd_bin)))
+                self.need_their_fd = False
         # shortcut read when we don't ever expect any data
         if self.repetitions == 0 or len(self.tt.data) == 0:
             debug("no verification required - no data")
@@ -237,6 +243,7 @@ class Source(Peer):
                     print('source %d %d %f' % (self.fd(), self.repetitions, time.time()))
                     # if we have no reps or no data, skip sending actual data
                     if self.want_to_write():
+                        self.outbuf += chr(self.fd())
                         return 1    # Keep us around for writing.
                     else:
                         # shortcut write when we don't ever expect any data
@@ -269,6 +276,7 @@ class Source(Peer):
             else:
                 self.state = self.CONNECTING_THROUGH_PROXY
                 self.outbuf = socks_cmd(self.dest)
+                self.outbuf += chr(self.fd())
                 # we write socks_cmd() to the proxy, then read the response
                 # if we get the correct response, we're CONNECTED
         if self.state == self.CONNECTED:
